@@ -56,21 +56,6 @@ typedef struct _PSISection
     UI8   m_SectionNum;     ///< Section number
     UI8   m_LastSectionNum; ///< Last section number
 }PSISection;
-/// @brief PAT Information
-typedef struct _PATInfor
-{
-    UI16  m_ProgramNum;
-    UI16  m_PID;
-}PATInfor;
-/// @brief PAT Table
-typedef struct _PATTable
-{
-    BOOL     m_TableDone;
-    UI8      m_SectionNum;
-    UI8      m_VersionNum;
-    int      m_RowNumber;
-    PATInfor m_PATRows[MAX_ROWS_IN_PSI_PKT];
-}PATTable;
 /// @brief PMT Information
 typedef struct _PMTInfor
 {
@@ -80,11 +65,8 @@ typedef struct _PMTInfor
 /// @brief PMT Table
 typedef struct _PMTTable
 {
-    BOOL     m_TableDone;
-    UI8      m_SectionNum;
-    UI8      m_VersionNum;
-    int      m_RowNumber;
-    PMTInfor m_PMTRows[MAX_ROWS_IN_PSI_PKT];
+    PMTInfor m_Video;
+    PMTInfor m_Audio;
 }PMTTable;
 /// @brief TS Packet Header Infromation\n
 typedef struct _TSHeader
@@ -92,27 +74,23 @@ typedef struct _TSHeader
     UI16  m_PID;            ///< PID
     UI8   m_PESPresent;     ///< Indicate if packet contains Packetized Elementary Stream(PES)
     UI8   m_PLDPresent;     ///< Indicate if packet contains payload data(PLD)
-    UI8   m_PCRPresent;     ///< Indicate if packet contains Program Clock Reference(PCR)
-    UI64  m_PCRValue;       ///< PCR value
 }TSHeader;
 /// @brief TS Demuxer Information
 typedef struct _TSDemuxer
 {
     TSDmxState   m_DmxState;///< Current demuxing status
     UI8*         m_PktData; ///< Current packet data
-    UI64         m_DmxPos;  ///< Current demux position
     TSHeader     m_Header;  ///< Current TS header information
     UI16         m_PMTPID;  ///< PMT PID
     PSISection   m_Sections;///< PSI sections
-    PATTable     m_PATTable;///< PAT table
     PMTTable     m_PMTTable;///< PMT table
     URLProtocol* m_Pro;     ///< Protocol interface for data IO
+    UI64         m_DmxPos;  ///< Current demux position
+    UI64         m_Duration;///< Duration, If it's a live stream set as 0
 }TSDemuxer;
 
 
 /// @brief Parse TS packet header(4Byte)
 BOOL TSParse_PktHeader (TSDemuxer* dmx, BitBuffer* buf);
-/// @brief Parse adaptation field control
-BOOL TSParse_AdapField (TSDemuxer* dmx, BitBuffer* buf);
 
 #endif // TS_PARSE_H
