@@ -15,6 +15,10 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
         goto TSPARSE_GETSECTION_RET;
     }
 
+    while (1)
+    {
+
+    }
 
 
 
