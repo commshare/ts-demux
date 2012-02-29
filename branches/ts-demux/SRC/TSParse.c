@@ -6,10 +6,10 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
 {
     I8 retval = FAIL;
     I8 msglev = MSGL_ERR;
-    I8 errstr[64];
+    I8 msgstr[64];
     URLProtocol* pro;
 
-    strpcy(errstr, "Parameters error");
+    strpcy(msgstr, "Parameters error");
     if ((dmx == NULL) || ((pro = dmx->m_Pro) == NULL))
     {
         goto TSPARSE_GETSECTION_RET;
@@ -24,7 +24,18 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
 
 
 TSPARSE_GETSECTION_RET:
-    mp_msg(0, msglev, "DEMUX ################ TSParse_GetSection : %s\n", errstr);
+    mp_msg(0, msglev, "DEMUX ################ TSParse_GetSection : %s\n", msgstr);
     return retval;
+}
+
+
+BOOL TSParse_PktHeader (TSDemuxer* dmx)
+{
+    I8 retval = FAIL;
+    I8 msglev = MSGL_ERR;
+    I8 msgstr[64];
+
+    strcpy(msgstr, "Parameters error");
+    if ()
 }
 
