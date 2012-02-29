@@ -32,6 +32,40 @@ typedef unsigned short     UI16;
 typedef unsigned long      UI32;
 typedef unsigned long long UI64;
 #endif/*BASE_TYPEDEF*/
+/// @brief Stream ID
+typedef enum   _StreadmID
+{
+    STREAM_ID_PROGRAM_MAP,
+    STREAM_ID_PRIV_1,
+    STREAM_ID_PADDING_STREAM,
+    STREAM_ID_PRIV_2,
+    STREAM_ID_ECM,
+    STREAM_ID_EMM
+}StreamID;
+/// @brief Stream type
+typedef enum   _StreamType
+{
+    STREAM_TYPE_M_11172     = 0x01,
+    STREAM_TYPE_M_H262      = 0x02,
+    STREAM_TYPE_M_11172     = 0x03,
+    STREAM_TYPE_M_13818_1   = 0x04,
+    STREAM_TYPE_O_H222_1    = 0x05,
+    STREAM_TYPE_O_PES       = 0x06,
+    STREAM_TYPE_O_13522     = 0x07,
+    STREAM_TYPE_O_DSMCC     = 0x08,
+    STREAM_TYPE_O_H222_2    = 0x09,
+    STREAM_TYPE_O_13818_2   = 0x0A,
+    STREAM_TYPE_O_13818_3   = 0x0B,
+    STREAM_TYPE_O_13818_4   = 0x0C,
+    STREAM_TYPE_O_13818_5   = 0x0D,
+    STREAM_TYPE_O_13818_5   = 0x0E,
+    STREAM_TYPE_M_MPEG2_AAC = 0x0F,
+    STREAM_TYPE_M_MPEG4     = 0x10,
+    STREAM_TYPE_M_MPEG4_AAC = 0x11,
+    STREAM_TYPE_M_H264      = 0x1B,
+    STREAM_TYPE_M_AVS       = 0x42,
+    STREAM_TYPE_M_AC3       = 0x81
+}StreamType;
 /// @brief PSI packet header
 typedef struct _PATHeader
 {
@@ -77,11 +111,23 @@ typedef struct _TSDemuxer
 }TSDemuxer;
 
 
-/// @brief Get a TS section
+/// @brief Get a TS audio or video section from current demux position
+/// @pre Have parsed PAT and PMT section and got audio and video PID
+/// @note This method will skip useless TS packet and modify demux position
 BOOL TSParse_GetSection (TSDemuxer* dmx);
-
+/// @brief Get a TS packet
+/// @note This method won't modify demux position
+BOOL TSParse_GetAPacket (TSDemuxer* dmx);
+/// @brief Add a pre-read TS packet
+/// @note This method won't modify demux position
+BOOL TSParse_AddAPacket (TSDemuxer* dmx);
 /// @brief Parse TS packet header(4Byte)
 /// @pre Have get a TS packet(with 188 byte) and initialized bit buffer
-BOOL TSParse_PktHeader  (TSDemuxer* dmx);
+BOOL TSParse_PackHeader (TSDemuxer* dmx);
+/// @brief Parse PAT Section
+BOOL TSParse_PATSection (TSDemuxer* dmx);
+/// @brief Parse PMT section and get audio and video PID
+/// @pre Have parsed PAT section and got PMT PID
+BOOL TSParse_PMTSection (TSDemuxer* dmx);
 
 #endif // TS_PARSE_H
