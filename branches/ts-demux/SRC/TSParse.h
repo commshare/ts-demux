@@ -35,46 +35,30 @@ typedef unsigned long long UI64;
 /// @brief Stream ID
 typedef enum   _StreadmID
 {
-    STREAM_ID_PROGRAM_MAP,
-    STREAM_ID_PRIV_1,
-    STREAM_ID_PADDING_STREAM,
-    STREAM_ID_PRIV_2,
-    STREAM_ID_ECM,
-    STREAM_ID_EMM
+    STREAM_ID_PROGRAM_MAP = 0xBC,   ///< Program stream map
+    STREAM_ID_PRIVATE_1   = 0xBD,   ///< Private stream 1
+    STREAM_ID_PADDING     = 0xBE,   ///< Padding stream
+    STREAM_ID_PRIVATE_2   = 0xBF,   ///< Private stream 2
+    STREAM_ID_ECM         = 0xF0,   ///< ECM stream
+    STREAM_ID_EMM         = 0xF1    ///< EMM stream
 }StreamID;
 /// @brief Stream type
 typedef enum   _StreamType
 {
-    STREAM_TYPE_M_11172     = 0x01,
-    STREAM_TYPE_M_H262      = 0x02,
-    STREAM_TYPE_M_11172     = 0x03,
-    STREAM_TYPE_M_13818_1   = 0x04,
-    STREAM_TYPE_O_H222_1    = 0x05,
-    STREAM_TYPE_O_PES       = 0x06,
-    STREAM_TYPE_O_13522     = 0x07,
-    STREAM_TYPE_O_DSMCC     = 0x08,
-    STREAM_TYPE_O_H222_2    = 0x09,
-    STREAM_TYPE_O_13818_2   = 0x0A,
-    STREAM_TYPE_O_13818_3   = 0x0B,
-    STREAM_TYPE_O_13818_4   = 0x0C,
-    STREAM_TYPE_O_13818_5   = 0x0D,
-    STREAM_TYPE_O_13818_5   = 0x0E,
-    STREAM_TYPE_M_MPEG2_AAC = 0x0F,
-    STREAM_TYPE_M_MPEG4     = 0x10,
-    STREAM_TYPE_M_MPEG4_AAC = 0x11,
-    STREAM_TYPE_M_H264      = 0x1B,
-    STREAM_TYPE_M_AVS       = 0x42,
-    STREAM_TYPE_M_AC3       = 0x81
+    STREAM_TYPE_MPEG_1V   = 0x01,   ///< MPEG-1 video subtype unknown
+    STREAM_TYPE_MPEG_2V_1 = 0x02,   ///< MPEG-2 video subtype unknown
+    STREAM_TYPE_MPEG_1A   = 0x03,   ///< MPEG-1 audio subtype unknown
+    STREAM_TYPE_MPEG_2A   = 0x04,   ///< MPEG-2 audio subtype unknown
+    STREAM_TYPE_AAC_ADTS  = 0x0F,   ///< AAC audio subtype ADTS
+    STREAM_TYPE_MPEG_4V   = 0x10,   ///< MPEG-4 video subtype unknown
+    STREAM_TYPE_AAC_LATM  = 0x11,   ///< AAC audio subtype LATM
+    STREAM_TYPE_AVC_1     = 0x1B,   ///< AVC(H264) video subtype unknown
+    STREAM_TYPE_AAC_UNKN  = 0x1C,   ///< AAC audio subtype unknown
+    STREAM_TYPE_TEXT      = 0x1D,   ///< Text
+    STREAM_TYPE_MPEG_2V_2 = 0x1E,   ///< MPEG-2 video subtype unknown
+    STREAM_TYPE_AVC_2     = 0x1F,   ///< AVC(H264) video subtype unknown
+    STREAM_TYPE_AVC_3     = 0x20    ///< AVC(H264) video subtype unknown
 }StreamType;
-/// @brief PSI packet header
-typedef struct _PATHeader
-{
-}PATHeader;
-typedef struct _PMTHeader
-{}PMTHeader;
-/// @brief PES packet header
-typedef struct _PESHeader
-{}PESHeader;
 /// @brief TS Packet Header Infromation\n
 typedef struct _TSHeader
 {
@@ -82,6 +66,15 @@ typedef struct _TSHeader
     UI8   m_PESPresent;     ///< Indicate if packet contains Packetized Elementary Stream(PES)
     UI8   m_PLDPresent;     ///< Indicate if packet contains payload data(PLD)
 }TSHeader;
+typedef struct _TSPSIPkt
+{
+    UI8   m_TableID;
+
+}TSPATPkt;
+typedef struct _TSPESPkt
+{
+
+}TSPESPkt;
 /// @brief TS section
 typedef struct _TSection
 {
@@ -93,9 +86,9 @@ typedef struct _TSection
 /// @brief Pre-read section node
 typedef struct _PreNode
 {
-    TSection*    m_Section;
+    UI8*
     struct _PreNode* m_Next;
-}PreNode;
+}PreNode, PreList;
 /// @brief TS Demuxer Information
 typedef struct _TSDemuxer
 {
@@ -103,7 +96,7 @@ typedef struct _TSDemuxer
     UI16         m_AudioPID;///< Audio PID, initialized with 0U
     UI16         m_VideoPID;///< Video PID, initialized with 0U
     TSection     m_Section; ///< Current section
-    PreNode      m_PreList; ///< Pre-read list
+    PreList      m_PreList; ///< Pre-read list
     URLProtocol* m_Pro;     ///< Protocol interface for data IO
     UI64         m_DmxPos;  ///< Current demux position
     UI64         m_FileSize;///< File size
@@ -115,19 +108,15 @@ typedef struct _TSDemuxer
 /// @pre Have parsed PAT and PMT section and got audio and video PID
 /// @note This method will skip useless TS packet and modify demux position
 BOOL TSParse_GetSection (TSDemuxer* dmx);
-/// @brief Get a TS packet
-/// @note This method won't modify demux position
-BOOL TSParse_GetAPacket (TSDemuxer* dmx);
-/// @brief Add a pre-read TS packet
-/// @note This method won't modify demux position
-BOOL TSParse_AddAPacket (TSDemuxer* dmx);
+BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8* tspkt);
+BOOL TSParse_AddAPacket (TSDemuxer* dmx, UI8* tspkt);
 /// @brief Parse TS packet header(4Byte)
 /// @pre Have get a TS packet(with 188 byte) and initialized bit buffer
-BOOL TSParse_PackHeader (TSDemuxer* dmx);
+BOOL TSParse_PackHeader (TSDemuxer* dmx, TSHeader* header);
 /// @brief Parse PAT Section
-BOOL TSParse_PATSection (TSDemuxer* dmx);
+BOOL TSParse_PATSection (TSDemuxer* dmx, TSPATPkt* patpkt);
 /// @brief Parse PMT section and get audio and video PID
 /// @pre Have parsed PAT section and got PMT PID
-BOOL TSParse_PMTSection (TSDemuxer* dmx);
+BOOL TSParse_PMTSection (TSDemuxer* dmx, TSPMTPkt* pmtpkt);
 
 #endif // TS_PARSE_H

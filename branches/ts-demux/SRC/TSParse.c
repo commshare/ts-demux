@@ -2,40 +2,52 @@
 #include "TSParse.h"
 #include "../mp_msg.h"
 
+BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8* tspkt)
+{
+}
+
+BOOL TSParse_AddAPacket (TSDemuxer* dmx, UI8* tspkt)
+{
+}
+
 BOOL TSParse_GetSection (TSDemuxer* dmx)
 {
-    I8 retval = FAIL;
-    I8 msglev = MSGL_ERR;
-    I8 msgstr[64];
-    URLProtocol* pro;
-
-    strpcy(msgstr, "Parameters error");
-    if ((dmx == NULL) || ((pro = dmx->m_Pro) == NULL))
+    if (dmx->m_PMTPID == 0U)
     {
-        goto TSPARSE_GETSECTION_RET;
+        /// get pat packet and parse pmt pid
+        /// other packet will be saved in pre-read list, return it
     }
-
-    while (1)
+    else if (dmx->m_AudioPID == 0U || dmx->m_VideoPID == 0U)
     {
-
+        /// read pakcet from pre-read list
+        /// drop pat and get pmt packet and parse audio and video pid, return it
+        /// other packet will be saved in pre-read list
     }
-
-
-
-
-TSPARSE_GETSECTION_RET:
-    mp_msg(0, msglev, "DEMUX ################ TSParse_GetSection : %s\n", msgstr);
-    return retval;
+    else
+    {
+        /// read packet from pre-read list
+        /// drop pat, pmt and other type packet and then get a audio or video section, return it
+    }
 }
 
 
-BOOL TSParse_PktHeader (TSDemuxer* dmx)
+BOOL TSParse_PackHeader (TSDemuxer* dmx, TSHeader* head)
 {
-    I8 retval = FAIL;
-    I8 msglev = MSGL_ERR;
-    I8 msgstr[64];
+    I8   retval = FAIL;
+    I8   msglev = MSGL_ERR;
+    I8   msgstr[64];
+    UI8  syncbyte;
+    BitBuffer* buf = NULL;
+
 
     strcpy(msgstr, "Parameters error");
+    if (dmx == NULL)
+    {}
+
+    buf = &(dmx->m_Section.m_BitBuf);
+
     if ()
 }
+
+BOOL TSParse_PATSection (TSDemuxer* dmx);
 
