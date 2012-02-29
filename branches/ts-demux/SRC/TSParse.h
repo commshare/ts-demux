@@ -32,42 +32,15 @@ typedef unsigned short     UI16;
 typedef unsigned long      UI32;
 typedef unsigned long long UI64;
 #endif/*BASE_TYPEDEF*/
-/// @brief Describe the state of current demuxing
-typedef enum   _TSDmxState
+/// @brief PSI packet header
+typedef struct _PATHeader
 {
-    PARSE_NOT_START = 0x00, ///< Not start
-    PARSED_PAT      = 0x01, ///< PAT has parsed
-    PARSED_PMT      = 0x02, ///< PMT has parsed
-    PARSING_AV      = 0x03  ///< Parsing AV data
-}TSDmxState;
-typedef enum   _TSPSIType
-{
-    PAT_SECTION     = 0x00, ///< PAT section, fixed with 0x00
-    CAT_SECTION     = 0x01, ///< CAT section, fixed with 0x01
-    FORBIDDEN       = 0xFF  ///< PID is 0xFF is forbidden, and other PID is for private sections
-}TSPSIType;
-/// @brief PSI Section Information
-typedef struct _PSISection
-{
-    UI8   m_TableID;        ///< Table ID
-    UI16  m_SectionLength;  ///< Section length
-    UI8   m_VersionNum;     ///< Version number
-    UI8   m_NextIndicator;  ///< Current next indicator
-    UI8   m_SectionNum;     ///< Section number
-    UI8   m_LastSectionNum; ///< Last section number
-}PSISection;
-/// @brief PMT Information
-typedef struct _PMTInfor
-{
-    UI8   m_StreamType;
-    UI16  m_ElementaryPID;
-}PMTInfor;
-/// @brief PMT Table
-typedef struct _PMTTable
-{
-    PMTInfor m_Video;
-    PMTInfor m_Audio;
-}PMTTable;
+}PATHeader;
+typedef struct _PMTHeader
+{}PMTHeader;
+/// @brief PES packet header
+typedef struct _PESHeader
+{}PESHeader;
 /// @brief TS Packet Header Infromation\n
 typedef struct _TSHeader
 {
@@ -75,22 +48,40 @@ typedef struct _TSHeader
     UI8   m_PESPresent;     ///< Indicate if packet contains Packetized Elementary Stream(PES)
     UI8   m_PLDPresent;     ///< Indicate if packet contains payload data(PLD)
 }TSHeader;
+/// @brief TS section
+typedef struct _TSection
+{
+    UI16         m_SectionType; ///< Packet type
+    void*        m_SectionHead;
+    UI8*         m_SectionData; ///< Packet data
+    BitBuffer    m_BitBuf;  ///< Bit buffer
+}TSection;
+/// @brief Pre-read section node
+typedef struct _PreNode
+{
+    TSection*    m_Section;
+    struct _PreNode* m_Next;
+}PreNode;
 /// @brief TS Demuxer Information
 typedef struct _TSDemuxer
 {
-    TSDmxState   m_DmxState;///< Current demuxing status
-    UI8*         m_PktData; ///< Current packet data
-    TSHeader     m_Header;  ///< Current TS header information
-    UI16         m_PMTPID;  ///< PMT PID
-    PSISection   m_Sections;///< PSI sections
-    PMTTable     m_PMTTable;///< PMT table
+    UI16         m_PMTPID;  ///< PMT PID, initialized with 0U
+    UI16         m_AudioPID;///< Audio PID, initialized with 0U
+    UI16         m_VideoPID;///< Video PID, initialized with 0U
+    TSection     m_Section; ///< Current section
+    PreNode      m_PreList; ///< Pre-read list
     URLProtocol* m_Pro;     ///< Protocol interface for data IO
     UI64         m_DmxPos;  ///< Current demux position
+    UI64         m_FileSize;///< File size
     UI64         m_Duration;///< Duration, If it's a live stream set as 0
 }TSDemuxer;
 
 
+/// @brief Get a TS section
+BOOL TSParse_GetSection (TSDemuxer* dmx);
+
 /// @brief Parse TS packet header(4Byte)
-BOOL TSParse_PktHeader (TSDemuxer* dmx, BitBuffer* buf);
+/// @pre Have get a TS packet(with 188 byte) and initialized bit buffer
+BOOL TSParse_PktHeader  (TSDemuxer* dmx);
 
 #endif // TS_PARSE_H
