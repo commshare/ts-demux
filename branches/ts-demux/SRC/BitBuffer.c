@@ -9,7 +9,7 @@ static UI8 bytemask[9] =
     0x01, 0x03, 0x07, 0x0F,
     0x1F, 0x3F, 0x7F, 0xFF
 };
-int InitiBitBuffer (BitBuffer** buf, UI8* data, I32 lenght)
+BOOL InitiBitBuffer (BitBuffer** buf, UI8* data, I32 lenght)
 {
     if (len == 0L || data == NULL)
     {
@@ -31,7 +31,7 @@ int InitiBitBuffer (BitBuffer** buf, UI8* data, I32 lenght)
 
     return SUCCESS;
 }
-int CloseBitBuffer (BitBuffer** buf)
+BOOL CloseBitBuffer (BitBuffer** buf)
 {
     if (*buf != NULL)
     {
@@ -46,7 +46,7 @@ int CloseBitBuffer (BitBuffer** buf)
 
     return SUCCESS;
 }
-int CheckBitBuffer (BitBuffer* buf, I32 bits)
+BOOL CheckBitBuffer (BitBuffer* buf, I32 bits)
 {
     I32 bitpos  = 0L;
     I32 bytepos = 0L;
@@ -67,7 +67,7 @@ int CheckBitBuffer (BitBuffer* buf, I32 bits)
 
     return SUCCESS;
 }
-int SkipSeverlBits (BitBuffer* buf, I32 bits)
+BOOL SkipSeverlBits (BitBuffer* buf, I32 bits)
 {
     if (CheckBitBuffer(buf, bits) == FAIL)
     {
@@ -91,7 +91,7 @@ int SkipSeverlBits (BitBuffer* buf, I32 bits)
 
     return SUCCESS;
 }
-int GetDataFromBitBuffer_08 (BitBuffer *buf, I32 bits, UI8 * val)
+BOOL GetDataFromBitBuffer_08 (BitBuffer *buf, I32 bits, UI8 * val)
 {
     UI8 d = 0U;
 
@@ -122,7 +122,7 @@ int GetDataFromBitBuffer_08 (BitBuffer *buf, I32 bits, UI8 * val)
 
     return SUCCESS;
 }
-int GetDataFromBitBuffer_16 (BitBuffer *buf, I32 bits, UI16* val)
+BOOL GetDataFromBitBuffer_16 (BitBuffer *buf, I32 bits, UI16* val)
 {
     UI16 d = 0U;
 
@@ -153,7 +153,7 @@ int GetDataFromBitBuffer_16 (BitBuffer *buf, I32 bits, UI16* val)
 
     return SUCCESS;
 }
-int GetDataFromBitBuffer_32 (BitBuffer *buf, I32 bits, UI32* val)
+BOOL GetDataFromBitBuffer_32 (BitBuffer *buf, I32 bits, UI32* val)
 {
     UI32 d = 0UL;
 
@@ -184,7 +184,7 @@ int GetDataFromBitBuffer_32 (BitBuffer *buf, I32 bits, UI32* val)
 
     return SUCCESS;
 }
-int GetDataFromBitBuffer_64 (BitBuffer *buf, I32 bits, UI64* val)
+BOOL GetDataFromBitBuffer_64 (BitBuffer *buf, I32 bits, UI64* val)
 {
     UI64 d = 0ULL;
 
@@ -215,7 +215,7 @@ int GetDataFromBitBuffer_64 (BitBuffer *buf, I32 bits, UI64* val)
 
     return SUCCESS;
 }
-int GetDataFromBitBuffer (BitBuffer* buf, I32 bits, void* val)
+BOOL GetDataFromBitBuffer (BitBuffer* buf, I32 bits, void* val)
 {
     if (bits >= 1 && bits <= 8)
     {
@@ -238,7 +238,7 @@ int GetDataFromBitBuffer (BitBuffer* buf, I32 bits, void* val)
         return FAIL;
     }
 }
-int WriteDataToBitBuffer (BitBuffer* buf, I32 bits, UI64  val)
+BOOL WriteDataToBitBuffer (BitBuffer* buf, I32 bits, UI64  val)
 {
     if (CheckBitBuffer(buf, bits) == FAIL)
     {

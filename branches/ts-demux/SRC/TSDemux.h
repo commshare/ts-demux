@@ -4,6 +4,7 @@
 #include "TSParse.h"
 #include "../demux.h"
 #include "../mp_msg.h"
+#include "../avformat.h"
 
 int TSDemux_Open    (DemuxContext* ctx, URLProtocol* h);
 int TSDemux_Close   (DemuxContext* ctx);

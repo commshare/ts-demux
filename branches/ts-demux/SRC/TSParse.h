@@ -12,14 +12,7 @@
 #define TRUE                  1     ///< True flag
 #endif/*BASE_DEFINED*/
 #define TS_PACKET_SIZE_188  188     ///< 188 bytes ts packet
-#define TS_PACKET_SIZE_192  192     ///< 192 bytes ts packet
-#define TS_PACKET_SIZE_204  204     ///< 204 bytes ts packet
-#define TS_PACKET_SIZE_208  208     ///< 208 bytes ts packet
-#define TS_PACKET_SIZE_MAX  208     ///< Maximum packet size
-#define SYN_PROBE_MAX_SIZE  832     ///< Maximum probe size, 4 times the length of maximum pakcet
-#define TS_PACKET_SYN_BYTE   71     ///< TS sync byte
-#define MAX_PREREAD_PACKET  100     ///< Maximum pre-read packets
-#define MAX_ROWS_IN_PSI_PKT  32     ///< Maximum rows in PSI packet
+#define TS_PACKET_SYN_BYTE 0x47     ///< TS sync byte
 
 #ifndef BASE_TYPEDEF
 #define BASE_TYPEDEF
@@ -66,9 +59,13 @@ typedef struct _TSHeader
     UI8   m_PESPresent;     ///< Indicate if packet contains Packetized Elementary Stream(PES)
     UI8   m_PLDPresent;     ///< Indicate if packet contains payload data(PLD)
 }TSHeader;
-typedef struct _TSPSIPkt
+typedef struct _TSPMTPkt
 {
     UI8   m_TableID;
+    UI16  m_SectLen;
+}TSPMTPkt;
+typedef struct _TSPATPkt
+{
 
 }TSPATPkt;
 typedef struct _TSPESPkt
@@ -86,7 +83,9 @@ typedef struct _TSection
 /// @brief Pre-read section node
 typedef struct _PreNode
 {
-    UI8*
+    UI8*             m_Data;
+    UI32             m_Lens;
+    UI64             m_Pos;
     struct _PreNode* m_Next;
 }PreNode, PreList;
 /// @brief TS Demuxer Information
@@ -98,7 +97,7 @@ typedef struct _TSDemuxer
     TSection     m_Section; ///< Current section
     PreList      m_PreList; ///< Pre-read list
     URLProtocol* m_Pro;     ///< Protocol interface for data IO
-    UI64         m_DmxPos;  ///< Current demux position
+    UI64         m_Position;///< Current demux position
     UI64         m_FileSize;///< File size
     UI64         m_Duration;///< Duration, If it's a live stream set as 0
 }TSDemuxer;
@@ -108,15 +107,18 @@ typedef struct _TSDemuxer
 /// @pre Have parsed PAT and PMT section and got audio and video PID
 /// @note This method will skip useless TS packet and modify demux position
 BOOL TSParse_GetSection (TSDemuxer* dmx);
+/// @brief Get a TS packet
+/// @note The demux position will be modified
 BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8* tspkt);
 BOOL TSParse_AddAPacket (TSDemuxer* dmx, UI8* tspkt);
 /// @brief Parse TS packet header(4Byte)
 /// @pre Have get a TS packet(with 188 byte) and initialized bit buffer
-BOOL TSParse_PackHeader (TSDemuxer* dmx, TSHeader* header);
+BOOL TSParse_PackHeader (BitBuffer* buf, TSHeader* head);
 /// @brief Parse PAT Section
-BOOL TSParse_PATSection (TSDemuxer* dmx, TSPATPkt* patpkt);
+/// @pre Have parsed packet header and PID is 0
+BOOL TSParse_PATSection (BitBuffer* buf, TSPATPkt* pack);
 /// @brief Parse PMT section and get audio and video PID
-/// @pre Have parsed PAT section and got PMT PID
-BOOL TSParse_PMTSection (TSDemuxer* dmx, TSPMTPkt* pmtpkt);
+/// @pre Have parsed PAT section and got PMT PID, PID in parsed packet header is equal to PMT PID
+BOOL TSParse_PMTSection (TSDemuxer* dmx, TSPMTPkt* pack);
 
 #endif // TS_PARSE_H
