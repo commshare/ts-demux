@@ -12,13 +12,3 @@ SOURCES += \
     TestRoutine.c \
     mp_msg.c \
     urlprotocol.c
-
-OTHER_FILES +=
-
-
-
-
-
-
-
-
