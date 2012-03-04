@@ -39,7 +39,8 @@ typedef struct BitBuffer
 /// @note  If you wanna to initialize a bit buffer for writing data, please memset the data before
 BOOL InitiBitBuffer (BitBuffer** buf, UI8* data, I32 length);
 /// @brief Close and destroy bit buffer
-BOOL CloseBitBuffer (BitBuffer** buf);
+/// @note  The member #BitBuffer::m_Data will be freed by the one who create it
+void CloseBitBuffer (BitBuffer** buf);
 /// @brief Check if bit buffer is availalbe before Get or Put data
 BOOL CheckBitBuffer (BitBuffer* buf, I32 bits);
 /// @brief Skip some bits
