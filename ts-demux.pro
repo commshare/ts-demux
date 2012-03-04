@@ -9,11 +9,6 @@ SOURCES += \
     SRC/BitBuffer.c
 
 
-#If support 192, 204, 208 size packet, add following defination
-DEFINES += TS_SUPPORT_192_PKT
-DEFINES += TS_SUPPORT_204_PKT
-DEFINES += TS_SUPPORT_208_PKT
-
 
 
 
