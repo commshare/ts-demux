@@ -9,9 +9,9 @@ static UI8 bytemask[9] =
     0x01, 0x03, 0x07, 0x0F,
     0x1F, 0x3F, 0x7F, 0xFF
 };
-BOOL InitiBitBuffer (BitBuffer** buf, UI8* data, I32 lenght)
+BOOL InitiBitBuffer (BitBuffer** buf, UI8* data, I32 length)
 {
-    if (len == 0L || data == NULL)
+    if (length == 0L || data == NULL)
     {
         return FAIL;
     }
@@ -25,17 +25,17 @@ BOOL InitiBitBuffer (BitBuffer** buf, UI8* data, I32 lenght)
     }
 
     (*buf)->m_Data    = data;
-    (*buf)->m_Length  = lenght;
+    (*buf)->m_Length  = length;
     (*buf)->m_BytePos = 0L;
     (*buf)->m_BitLeft = 8L;
 
     return SUCCESS;
 }
-BOOL CloseBitBuffer (BitBuffer** buf)
+void CloseBitBuffer (BitBuffer** buf)
 {
     if (*buf != NULL)
     {
-        if ((*buf)->m_Data != NULL)
+        if ((*buf)->m_Data  != NULL)
         {
             free ((*buf)->m_Data);
             (*buf)->m_Data = NULL;
@@ -43,8 +43,6 @@ BOOL CloseBitBuffer (BitBuffer** buf)
         free (*buf);
         *buf = NULL;
     }
-
-    return SUCCESS;
 }
 BOOL CheckBitBuffer (BitBuffer* buf, I32 bits)
 {
