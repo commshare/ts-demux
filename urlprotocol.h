@@ -93,4 +93,7 @@ URLProtocol * getURLProtocolByUrl(const char * url);
  */
 char * getExtensionFromUrl(const char *url);
 
+extern URLProtocol* CreateURLProtocol ();
+extern URLProtocol* h;
+
 #endif // _URLPROTOCOL_H_

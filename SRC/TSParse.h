@@ -18,6 +18,10 @@
 #define TS_PACKET_SIZE_208  208     ///< 208 bytes ts packet
 #define TS_PACKET_SIZE_MAX  208     ///< Maximum ts packet length
 #define TS_PACKET_SYN_BYTE 0x47     ///< TS sync byte
+#define PSI_PACKET_HEADER_LEN 3     ///< PSI packet header length
+#define PES_PACKET_HEADER_LEN 6     ///< PES packet header length
+#define IS_AUDIO_STREAM_ID(i) (i >= 0xC0 && i <= 0xDF)
+#define IS_VIDEO_STREAM_ID(i) (i >= 0xE0 && i <= 0xEF)
 
 #ifndef BASE_TYPEDEF
 #define BASE_TYPEDEF
@@ -38,7 +42,10 @@ typedef enum   _StreadmID
     STREAM_ID_PADDING     = 0xBE,   ///< Padding stream
     STREAM_ID_PRIVATE_2   = 0xBF,   ///< Private stream 2
     STREAM_ID_ECM         = 0xF0,   ///< ECM stream
-    STREAM_ID_EMM         = 0xF1    ///< EMM stream
+    STREAM_ID_EMM         = 0xF1,   ///< EMM stream
+    STREAM_ID_DSM_CC      = 0xF2,   ///< DSM_CC stream
+    STREAM_ID_13522       = 0xF3,   ///< ISO/IEC 13522 stream
+    STREAM_ID_PRO_DIREC   = 0xFF    ///< Progream stream directory
 }StreamID;
 /// @brief Stream type
 typedef enum   _StreamType
@@ -57,6 +64,12 @@ typedef enum   _StreamType
     STREAM_TYPE_AVC_2     = 0x1F,   ///< AVC(H264) video subtype unknown
     STREAM_TYPE_AVC_3     = 0x20    ///< AVC(H264) video subtype unknown
 }StreamType;
+typedef enum  _ParseLev
+{
+    PARSE_LEV_PAT,              ///< PAT has not been parsed
+    PARSE_LEV_PMT,              ///< PMT has not been parsed
+    PARSE_LEV_PES               ///< PAT and PMT have been parsed
+}ParseLev;
 /// @brief TS Packet Header Information\n
 typedef struct _TSHeader
 {
@@ -66,12 +79,16 @@ typedef struct _TSHeader
     UI8          m_PCRPresent;  ///< Indicate if packet contains PCR
     UI64         m_PCRBase;     ///< PCR base
     UI16         m_PCRExten;    ///< PCR extension
+    int          m_HeaderLen;   ///< TS packet header length
 }TSHeader;
 /// @brief TS section
 typedef struct _TSection
 {
-    UI16         m_SectionType; ///< Section type
-    UI8*         m_SectionData; ///< Section data
+    UI8          m_StreamID;    ///< PES stream id
+    UI16         m_Type; ///< Section type
+    UI8*         m_Data; ///< Section data
+    UI64         m_DataLen; ///< Section data length
+    UI64         m_BuffLen; ///< Section data buffer length
 }TSection;
 /// @brief TS packet
 typedef struct _TSPacket
@@ -94,8 +111,6 @@ typedef struct _TSDemuxer
     UI16         m_PMTPID;      ///< PMT PID, initialized with 0U
     UI16         m_AudioPID;    ///< Audio PID, initialized with 0U
     UI16         m_VideoPID;    ///< Video PID, initialized with 0U
-    UI32         m_AudioCodec;  ///< Audio Codec
-    UI32         m_VideoCodec;  ///< Video Codec
     TSection     m_Section;     ///< Current section
     PacketList   m_PktList;     ///< Pre-read list
     URLProtocol* m_Pro;         ///< Protocol interface for data IO
@@ -118,18 +133,21 @@ BOOL TSParse_AddPrePack (TSDemuxer* dmx, UI8* data, UI64 pos);
 /// @pre   The packet in pre-read packet list is used
 /// @param pos Start position of the pre-packet which will be deleted
 BOOL TSParse_DelPrePack (TSDemuxer* dmx, UI8* data);
-/// @brief Parse TS packet header(4Byte)
-/// @pre   Have get a TS packet(with 188 byte) and initialized bit buffer
-BOOL TSParse_PackHeader (TSHeader* head, UI8* data);
+/// @brief Get a section
+BOOL TSParse_GetSection (TSDemuxer* dmx);
 /// @brief Get and parse PAT section to set PMT PID
 BOOL TSParse_PATSection (TSDemuxer* dmx);
 /// @brief Get and parse PMT section to set audio and video PID
 /// @pre   PMT PID have been set
-BOOL TSParse_PMTSection (TSDemuxer* dmx);
-/// @brief Get stream duration
-/// @pre   Audio's PID and video's PID have been set
-BOOL TSParse_TSDuration (TSDemuxer* dmx);
+BOOL TSParse_PMTSection (TSDemuxer* dmx, Metadata* meta);
 /// @brief Get an audio or a video section
 /// @pre   PAT's PID, PMT's PID audio's PID and video's PID have been set
-BOOL TSParse_PESSection (TSDemuxer* dmx);
+BOOL TSParse_PESSection (TSDemuxer* dmx, AVPacket* pack);
+/// @brief Parse TS packet header(4Byte)
+/// @pre   Have get a TS packet(with 188 byte) and initialized bit buffer
+BOOL TSParse_TSPacketHeader (UI8* data, TSHeader* head);
+/// @brief Parse PSI(PAT/PMT) section header
+BOOL TSParse_ParsePSIHeader (UI8* data, UI16* section_len);
+/// @brief Parse PES section header
+BOOL TSParse_ParsePESHeader (UI8* data, UI16* section_len, UI8* stream_id);
 #endif/*TS_PARSE_H*/
