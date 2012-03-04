@@ -9,6 +9,6 @@ SOURCES += \
     SRC/TSParse.c \
     SRC/TSDemux.c \
     SRC/BitBuffer.c \
-    TestRoutine.c \
     mp_msg.c \
-    urlprotocol.c
+    urlprotocol.c \
+    main.c

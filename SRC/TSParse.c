@@ -208,7 +208,6 @@ BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8* data)
     I8 ret = FAIL;
 
     URLProtocol* pro = dmx->m_Pro;
-    int i = 0;
 
     strcpy(msg, "Calling url_seek failed");
     ret = pro->url_read(pro, data, 1);
@@ -224,6 +223,7 @@ BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8* data)
     /// Sync with 188 bytes
     if (TS_PACKET_SYN_BYTE != data[0])
     {
+        int i;
         for (i = 0; i < 4; ++i)
         {
             if (1 != pro->url_read(pro, data, 1))
