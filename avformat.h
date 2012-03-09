@@ -336,6 +336,18 @@ typedef enum FLVTagType
     MDATA_FLV_STREAM_ID = 0x12
 }FLVTagType;
 
+typedef enum AACSubType
+{
+    AAC_SUBTYPE_ADTS = 0x00,
+    AAC_SUBTYPE_ADIF = 0x01,
+    AAC_SUBTYPE_LATM = 0x02
+}AACSubType;
+
+typedef enum MPEG4SubType
+{
+    AAA
+}MPEG4SubType;
+
 typedef struct Metadata{
     int fileformat;
     int videocodec;
@@ -356,10 +368,10 @@ typedef struct AVPacket {
     unsigned char *data;
     int bufferlength;       ///< the memory(pointer by data) region size
     int size;               ///< how many bytes in data, <= bufferlength
-    int stream_index;       ///<  video or audio index
+    int stream_index;       ///< video or audio index
     int duration;           ///< presentation duration in time_base units (0 if not available)
-    int isUsed;             /// 1 - This structure is using
-    int iSendDsiSend;       /// If need sending DSI data
+    int isUsed;             ///< 1 - This structure is using
+    int iSendDsiSend;       ///< If need sending DSI data
 } AVPacket;
 
 typedef struct AVPacketList{
