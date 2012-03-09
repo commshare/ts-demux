@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <malloc.h>
+#include <stdlib.h>
 #include "urlprotocol.h"
 
 #ifndef BASE_DEFINED
@@ -33,9 +34,18 @@ int url_open (URLProtocol *h, const char* path, int flags, void* quit)
 {
     URLPrivData* d = NULL;
     h->priv_data = d = (URLPrivData*)malloc(sizeof(URLPrivData));
+    if (d == NULL)
+    {
+        return -1;
+    }
     d->currpos   = 0ULL;
     d->filesize  = 0ULL;
     d->fp = fopen(path, "rb+");
+    if (d->fp == NULL)
+    {
+        puts("Cannot open file\n");
+        exit(0);
+    }
     fseek(d->fp, 0, SEEK_END);
     d->filesize = ftell(d->fp);
     fseek(d->fp, 0, SEEK_SET);
@@ -80,6 +90,10 @@ URLProtocol* CreateURLProtocol ()
 {
     URLProtocol* h = (URLProtocol*)malloc(sizeof(URLProtocol));
 
+    if (h == NULL)
+    {
+        return NULL;
+    }
     h->url_open         = url_open;
     h->url_close        = url_close;
     h->url_read         = url_read;

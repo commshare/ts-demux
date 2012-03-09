@@ -29,15 +29,15 @@ typedef unsigned long long UI64;
 /// @brief Bit buffer
 typedef struct BitBuffer
 {
-    UI8* m_Data;    ///< BitBuffer data
-    I32  m_Length;  ///< BitBuffer data length
-    I32  m_BytePos; ///< Current read byte
-    I32  m_BitLeft; ///< Current byte unread bits number
+    const UI8* m_Data;  ///< BitBuffer data
+    I32  m_Length;      ///< BitBuffer data length
+    I32  m_BytePos;     ///< Current read byte
+    I32  m_BitLeft;     ///< Current byte unread bits number
 }BitBuffer;
 
 /// @brief Initialize bit buffer
 /// @note  If you wanna to initialize a bit buffer for writing data, please memset the data before
-BOOL InitiBitBuffer (BitBuffer** buf, UI8* data, I32 length);
+BOOL InitiBitBuffer (BitBuffer** buf, const UI8* data, I32 length);
 /// @brief Close and destroy bit buffer
 /// @note  The member #BitBuffer::m_Data will be freed by the one who create it
 void CloseBitBuffer (BitBuffer** buf);
@@ -51,7 +51,5 @@ BOOL GetDataFromBitBuffer_16 (BitBuffer* buf, I32 bits, UI16* val);
 BOOL GetDataFromBitBuffer_32 (BitBuffer* buf, I32 bits, UI32* val);
 BOOL GetDataFromBitBuffer_64 (BitBuffer* buf, I32 bits, UI64* val);
 BOOL GetDataFromBitBuffer    (BitBuffer* buf, I32 bits, void* val);
-/// @brief Pub data to bit buffer
-BOOL WriteDataToBitBuffer    (BitBuffer* buf, I32 bits, UI64  val);
 
 #endif/*BITBUFFER_H*/
