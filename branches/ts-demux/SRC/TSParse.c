@@ -345,7 +345,7 @@ BOOL TSParse_DelPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos)
         msg = "No this packet in list";
     }
 
-    mp_msg(0, lev, "DEMUX ################ %s\n", msg);
+    mp_msg(0, lev, "DEMUX ################ TSParse_DelPrePack : %s\n", msg);
     return ret;
 }
 BOOL TSParse_GetSection (TSDemuxer* dmx)
@@ -380,6 +380,7 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
         parse_lev = PARSE_LEV_PES;
     }
 
+    mp_msg(0, MSGL_V, "DEMUX ################ TSParse_GetSection : Start\n");
 
     do{
         int  len                = 0;
@@ -498,47 +499,62 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
         switch (pack_handle)
         {
         case PARSE  :
-            if (parse_pkt != temp_pack)
             {
-                memcpy(temp_pack, parse_pkt, TS_PACKET_SIZE_188);
-                if (TSParse_DelPrePack(dmx, &parse_pkt, node->m_Position))
+                if (parse_pkt != temp_pack)
                 {
-                    msg = "Delete a pre-read packet failed";
-                    goto TSPARSE_GETSECTION_RET;
+                    memcpy(temp_pack, parse_pkt, TS_PACKET_SIZE_188);
+                    if (TSParse_DelPrePack(dmx, &parse_pkt, node->m_Position))
+                    {
+                        msg = "Delete a pre-read packet failed";
+                        goto TSPARSE_GETSECTION_RET;
+                    }
+                    parse_pkt = temp_pack;
+                    node = prev->m_Next;
                 }
-                parse_pkt = temp_pack;
-                node = prev->m_Next;
+                break;
             }
-            break;
         case DROP   :
-            if (parse_pkt != temp_pack)
             {
-                if (TSParse_DelPrePack(dmx, &parse_pkt, node->m_Position))
+                if (parse_pkt != temp_pack)
                 {
-                    msg = "Delete a pre-read packet failed";
-                    goto TSPARSE_GETSECTION_RET;
+                    if (TSParse_DelPrePack(dmx, &parse_pkt, node->m_Position))
+                    {
+                        msg = "Delete a pre-read packet failed";
+                        goto TSPARSE_GETSECTION_RET;
+                    }
+                    node = prev->m_Next;
                 }
-                node = prev->m_Next;
                 continue;
             }
         case KEEP   :
-        case PES_END:
-            if (parse_pkt == temp_pack)
             {
-                if (TSParse_AddPrePack(dmx, &parse_pkt, dmx->m_Position - TS_PACKET_SIZE_188))
+                if (parse_pkt == temp_pack)
                 {
-                    msg = "Delete a pre-read packet failed";
-                    goto TSPARSE_GETSECTION_RET;
+                    if (TSParse_AddPrePack(dmx, &parse_pkt, dmx->m_Position - TS_PACKET_SIZE_188))
+                    {
+                        msg = "Delete a pre-read packet failed";
+                        goto TSPARSE_GETSECTION_RET;
+                    }
+                    temp_pack = NULL;
                 }
-                temp_pack = NULL;
+                else
+                {
+                    node = node->m_Next;
+                    prev = prev->m_Next;
+                }
+                continue;
             }
-            else
+        case PES_END:
             {
-                node = node->m_Next;
-                prev = prev->m_Next;
-            }
-            if (pack_handle == PES_END)
-            {
+                if (parse_pkt == temp_pack)
+                {
+                    if (TSParse_AddPrePack(dmx, &parse_pkt, dmx->m_Position - TS_PACKET_SIZE_188))
+                    {
+                        msg = "Delete a pre-read packet failed";
+                        goto TSPARSE_GETSECTION_RET;
+                    }
+                    temp_pack = NULL;
+                }
                 if (section_len == 0)
                 {
                     dmx->m_Section->m_DataLen = copy_lens;
@@ -547,8 +563,8 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
                 lev = MSGL_V;
                 msg = "Get a section OK";
                 goto TSPARSE_GETSECTION_RET;
+                break;
             }
-            continue;
         }
 
         /// Step-4 : Parse payload packet header
@@ -1170,7 +1186,7 @@ BOOL TSParse_ParsePESHeader (const UI8* data, UI16  datalen, UI16* len, BOOL* va
 
 TSPARSE_PARSEPSIHEADER_RET:
     CloseBitBuffer(&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_ParsePESHeader : %s\n");
+    mp_msg(0, lev, "DEMUX ################ TSParse_ParsePESHeader : %s\n", msg);
     return ret;
 }
 BOOL TSParse_ParsePSIHeader (const UI8* data, UI16  datalen, UI16* len)
