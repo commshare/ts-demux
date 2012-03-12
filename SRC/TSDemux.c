@@ -2,6 +2,7 @@
 #include <string.h>
 #include "TSParse.h"
 #include "TSDemux.h"
+#include "demux_log.h"
 #include "../mp_msg.h"
 
 #ifndef _TS_DEMUX_TEST_
