@@ -5,11 +5,11 @@
 #include "../mp_msg.h"
 
 #ifndef _TS_DEMUX_TEST_
-/// @brief Demux Healper Initialize
+/// @brief Demux Helper Initialize
 static int           demux_helper_initialise();
-/// @brief Demux Healper Destroy
+/// @brief Demux Helper Destroy
 static int           demux_helper_deinitialise();
-/// @brief Demux Helper Set Exit Flg
+/// @brief Demux Helper Set Exit Flag
 static void          demux_helper_set_exit_flag();
 /// @brief  Check if file of this type can handle
 static int           can_handle(int fileformat);

@@ -56,7 +56,7 @@ typedef enum   _ParseLev
 typedef struct _TSection
 {
     BOOL         m_Valid;           ///< PES stream id
-    UI16         m_Type;            ///< Section type
+    UI16         m_Type;            ///< Section type == A/V PID
     UI8*         m_Data;            ///< Section data
     UI64         m_Positon;         ///< Section Positon;
     UI64         m_DataLen;         ///< Section data length
