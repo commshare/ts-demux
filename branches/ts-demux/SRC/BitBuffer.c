@@ -1,7 +1,7 @@
 #include <malloc.h>
 #include <stddef.h>
 #include <string.h>
-#include "bitbuffer.h"
+#include "BitBuffer.h"
 
 static UI8 bytemask[9] =
 {
