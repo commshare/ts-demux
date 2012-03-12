@@ -4,6 +4,115 @@
 #include "TSDemux.h"
 #include "../mp_msg.h"
 
+#ifndef _TS_DEMUX_TEST_
+/// @brief Demux Healper Initialize
+static int           demux_helper_initialise();
+/// @brief Demux Healper Destroy
+static int           demux_helper_deinitialise();
+/// @brief Demux Helper Set Exit Flg
+static void          demux_helper_set_exit_flag();
+/// @brief  Check if file of this type can handle
+static int           can_handle(int fileformat);
+/// @brief Create Demux Context
+static DemuxContext* create_demux_context();
+/// @brief Destroy Demux Context
+static void          destroy_demux_context(DemuxContext * ctx);
+
+DemuxContextHelper   ts_demux_helper = {
+    "ts",
+    demux_helper_initialise,
+    demux_helper_deinitialise,
+    demux_helper_set_exit_flag,
+    can_handle,
+    create_demux_context,
+    destroy_demux_context,
+    0,
+    0
+};
+static DemuxContext* create_demux_context()
+{
+    DemuxContext * ctx = calloc(1, sizeof(DemuxContext));
+    ctx->demux_open = TSDemux_Open;
+    ctx->demux_probe = TSDemux_Probe;
+    ctx->demux_close = TSDemux_Close;
+    ctx->demux_parse_metadata = TSDemux_Mdata;
+    ctx->demux_read_packet = TSDemux_ReadAV;
+    ctx->demux_seek = TSDemux_Seek;
+
+    pthread_mutex_lock(&ts_demux_helper.instance_list_mutex);
+    //insert the instance to the global instance list
+    if(ts_demux_helper.priv_data == 0)
+    {
+        ts_demux_helper.priv_data = ctx;
+    }
+    else
+    {
+        ctx->next = ts_demux_helper.priv_data;
+        ts_demux_helper.priv_data = ctx;
+    }
+    pthread_mutex_unlock(&ts_demux_helper.instance_list_mutex);
+
+    return ctx;
+}
+static void destroy_demux_context(DemuxContext * ctx)
+{
+    pthread_mutex_lock(&ts_demux_helper.instance_list_mutex);
+    //remove the instance from the global instance list
+    DemuxContext * cur = ts_demux_helper.priv_data;
+    DemuxContext * prev = cur;
+    while(cur && cur != ctx)
+    {
+        prev = cur;
+        cur = cur->next;
+    }
+    if(cur == ctx)
+    {
+        if(cur == ts_demux_helper.priv_data)
+        {
+            //head will be free
+            ts_demux_helper.priv_data = cur->next;
+        }
+        else
+        {
+            prev->next = cur->next;
+        }
+    }
+
+    //destroy DemuxContext only, it's private data should be cleared in ts_demux_close
+    free(ctx);
+    pthread_mutex_unlock(&ts_demux_helper.instance_list_mutex);
+}
+static int  can_handle(int fileformat)
+{
+    if (fileformat == FILEFORMAT_ID_TS)
+    {
+        ts_demux_log(0, MSGL_V, "ts_demux_can_handle : OK\n");
+        return 0;
+    }
+    ts_demux_log_error(0, MSGL_V, "ts_demux_can_handle : This format cannot handle\n");
+    return -1;
+}
+static int  demux_helper_initialise()
+{
+    return pthread_mutex_init(&ts_demux_helper.instance_list_mutex, NULL);
+}
+static int  demux_helper_deinitialise()
+{
+    return pthread_mutex_destroy(&ts_demux_helper.instance_list_mutex);
+}
+static void demux_helper_set_exit_flag()
+{
+    pthread_mutex_lock(&ts_demux_helper.instance_list_mutex);
+    DemuxContext * ctx = ts_demux_helper.priv_data;
+    while(ctx)
+    {
+        ctx->exit_flag = 1;
+        ctx = ctx->next;
+    }
+    pthread_mutex_unlock(&ts_demux_helper.instance_list_mutex);
+}
+#endif
+
 int TSDemux_Open  (DemuxContext* ctx, URLProtocol* h)
 {
     I8 ret = FAIL;
@@ -44,7 +153,7 @@ int TSDemux_Open  (DemuxContext* ctx, URLProtocol* h)
     memset(dmx->m_PreListHeader, 0, sizeof(TSPacket));
     dmx->m_PreListLen = 0;
     dmx->m_Duration   = 0ULL;
-    dmx->m_FileSize   = (h->url_is_live(h) == 1 ? 0ULL : h->url_seek(h, 0, SEEK_SIZE));
+    dmx->m_FileSize   = ((h->url_is_live(h)||!h->url_is_live))? 0 : (h->url_seek(h, 0, SEEK_SIZE));
     dmx->m_Position   = 0ULL;
     dmx->m_PMTPID     = 0U;
     dmx->m_AudioPID   = 0U;
@@ -189,8 +298,8 @@ TSDEMUX_READAV_RET:
     mp_msg(0, lev, "DEMUX ################ TSDemux_ReadAV : %s\n", msg);
     if (ret == SUCCESS && dmx->m_Section->m_DataLen != 0ULL)
     {
-#if 0
-        mp_msg(0, MSGL_INFO, "\t %s PTS = %-8lld DTS = %-8lld SIZE = %-6d POS = %lld\n"\
+#if 1
+        mp_msg(0, MSGL_INFO, "\t%s PTS = 0x%016llX DTS = 0x%016llX SIZE = %-6d POS = %lld\n"\
             , pack->stream_index == dmx->m_AudioPID ? "Audio" : "Video", pack->pts, pack->dts\
             , pack->size, dmx->m_Section->m_Positon);
 #endif
