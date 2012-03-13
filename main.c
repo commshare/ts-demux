@@ -37,11 +37,7 @@ int main(int argc, char** argv)
     /// Test Packet Reading
     ret = 0;
     while ((ret = TSDemux_ReadAV (c, pack)) > 0);
-    if (ret < 0)
-    {
-        fgetc(stdin);
-        return -1;
-    }
+    TSDemux_Close(c);
     fgetc(stdin);
     return 0;
 }
