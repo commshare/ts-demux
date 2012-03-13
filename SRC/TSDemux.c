@@ -1,9 +1,49 @@
 #include <malloc.h>
 #include <string.h>
+#include <stdlib.h>
 #include "TSParse.h"
 #include "TSDemux.h"
 #include "demux_log.h"
 #include "../mp_msg.h"
+
+#ifdef _WRITE_RAW_DATA_TO_FILE_
+FILE* fp_audio;
+FILE* fp_video;
+void InitiAVFile ()
+{
+    fp_audio = fopen ("D:/Private/WorkArea/ts-sample/demo_live1/AUDIO", "wb+");
+    fp_video = fopen ("D:/Private/WorkArea/ts-sample/demo_live1/VIDEO", "wb+");
+
+    if (fp_video == NULL || fp_audio == NULL)
+    {
+        puts("Create File Failed\n");
+        fgetc(stdin);
+        exit(-1);
+    }
+}
+
+void WriteAVFile (const TSDemuxer* dmx, void* data, int length)
+{
+    if (dmx->m_AudioPID == dmx->m_Section->m_Type)
+    {
+        if (length != fwrite(data, 1, length, fp_audio))
+        {
+            fputs("Write File Failed", stdout);
+            fgetc(stdin);
+            exit(1);
+        }
+    }
+    else
+    {
+        if (length != fwrite(data, 1, length, fp_video))
+        {
+            fputs("Write File Failed", stdout);
+            fgetc(stdin);
+            exit(1);
+        }
+    }
+}
+#endif
 
 #ifndef _TS_DEMUX_TEST_
 /// @brief Demux Helper Initialize
@@ -254,6 +294,9 @@ TSDEMUX_MDATA_RET:
     mp_msg(0, lev, "\t Video :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
         , meta->videocodec, meta->subvideocodec, meta->videostreamindex);
 #endif
+#ifdef _WRITE_RAW_DATA_TO_FILE_
+    InitiAVFile();
+#endif
     return ret;
 }
 int TSDemux_ReadAV(DemuxContext* ctx, AVPacket* pack)
@@ -299,10 +342,13 @@ TSDEMUX_READAV_RET:
     mp_msg(0, lev, "DEMUX ################ TSDemux_ReadAV : %s\n", msg);
     if (ret == SUCCESS && dmx->m_Section->m_DataLen != 0ULL)
     {
-#if 1
+#if _OUTPUT_EACH_AV_PACKET_INFO_
         mp_msg(0, MSGL_INFO, "\t%s PTS = 0x%016llX DTS = 0x%016llX SIZE = %-6d POS = %lld\n"\
             , pack->stream_index == dmx->m_AudioPID ? "Audio" : "Video", pack->pts, pack->dts\
             , pack->size, dmx->m_Section->m_Positon);
+#endif
+#ifdef _WRITE_RAW_DATA_TO_FILE_
+        WriteAVFile(dmx, pack->data, pack->size);
 #endif
     }
     return pack->size;
