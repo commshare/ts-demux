@@ -243,6 +243,7 @@ int TSDemux_Close (DemuxContext* ctx)
                 free (node->m_Data);
                 node->m_Data = NULL;
             }
+            prev->m_Next = node->m_Next;
             free (node);
             node = prev->m_Next;
         }
