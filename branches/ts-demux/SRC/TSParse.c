@@ -925,6 +925,7 @@ BOOL TSParse_PMTSection (TSDemuxer* dmx, Metadata* meta)
         msg = "Cannot find audio or video PID";
         goto TSPARSE_PMTSECTION_RET;
     }
+    meta->fileformat = FILEFORMAT_ID_TS;
 
     ret = SUCCESS;
     lev = MSGL_V;
