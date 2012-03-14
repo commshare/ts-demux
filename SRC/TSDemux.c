@@ -213,7 +213,7 @@ int TSDemux_Open  (DemuxContext* ctx, URLProtocol* h)
     msg = "Open TS demux OK";
 
 TSDEMUX_OPEN_RET:
-    mp_msg(0, lev, "DEMUX ################ TSDemux_Open : %s File Size = %lld\n"\
+    ts_demux_log(0, lev, "DEMUX ################ TSDemux_Open : %s File Size = %lld\n"\
         , msg, dmx->m_FileSize);
     return ret;
 }
@@ -249,7 +249,7 @@ int TSDemux_Close (DemuxContext* ctx)
         }
     }
 
-    mp_msg(0, MSGL_INFO, "DEMUX ################ TSDemux_Close : TS demux is closed OK\n");
+    ts_demux_log(0, MSGL_INFO, "DEMUX ################ TSDemux_Close : TS demux is closed OK\n");
     return SUCCESS;
 }
 int TSDemux_Mdata (DemuxContext* ctx, Metadata* meta)
@@ -288,11 +288,11 @@ int TSDemux_Mdata (DemuxContext* ctx, Metadata* meta)
     msg = "Parse metadata OK";
 
 TSDEMUX_MDATA_RET:
-    mp_msg(0, lev, "DEMUX ################ TSDemux_Mdata : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSDemux_Mdata : %s\n", msg);
 #if 1
-    mp_msg(0, lev, "\t Audio :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
+    ts_demux_log(0, lev, "\t Audio :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
         , meta->audiocodec, meta->subaudiocodec, meta->audiostreamindex);
-    mp_msg(0, lev, "\t Video :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
+    ts_demux_log(0, lev, "\t Video :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
         , meta->videocodec, meta->subvideocodec, meta->videostreamindex);
 #endif
 #ifdef _WRITE_RAW_DATA_TO_FILE_
@@ -340,11 +340,11 @@ int TSDemux_ReadAV(DemuxContext* ctx, AVPacket* pack)
     msg = "Read a A/V section OK";
 
 TSDEMUX_READAV_RET:
-    mp_msg(0, lev, "DEMUX ################ TSDemux_ReadAV : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSDemux_ReadAV : %s\n", msg);
     if (ret == SUCCESS && dmx->m_Section->m_DataLen != 0ULL)
     {
 #if _OUTPUT_EACH_AV_PACKET_INFO_
-        mp_msg(0, MSGL_INFO, "\t%s PTS = 0x%016llX DTS = 0x%016llX SIZE = %-6d POS = %lld\n"\
+        ts_demux_log(0, MSGL_INFO, "\t%s PTS = 0x%016llX DTS = 0x%016llX SIZE = %-6d POS = %lld\n"\
             , pack->stream_index == dmx->m_AudioPID ? "Audio" : "Video", pack->pts, pack->dts\
             , pack->size, dmx->m_Section->m_Positon);
 #endif
