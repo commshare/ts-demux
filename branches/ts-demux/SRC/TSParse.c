@@ -259,7 +259,7 @@ BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8** pack, int* len)
     msg = "Get a TS packet OK";
 
 TSPARSE_GETAPACKET_RET:
-    mp_msg (0, lev, "DEMUX ################ TSParse_GetAPacket : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_GetAPacket : %s\n", msg);
     if (ret != SUCCESS && *pack != NULL)
     {
         free (*pack);
@@ -307,7 +307,7 @@ BOOL TSParse_AddPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos)
     msg = "Add a pre-read packet OK";
 
 TSPARSE_ADDPREPACK_RET:
-    mp_msg (0, lev, "DEMUX ################ TSParse_AddPrePack : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_AddPrePack : %s\n", msg);
     return ret;
 }
 BOOL TSParse_DelPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos)
@@ -345,7 +345,7 @@ BOOL TSParse_DelPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos)
         msg = "No this packet in list";
     }
 
-    mp_msg(0, lev, "DEMUX ################ TSParse_DelPrePack : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_DelPrePack : %s\n", msg);
     return ret;
 }
 BOOL TSParse_GetSection (TSDemuxer* dmx)
@@ -380,7 +380,7 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
         parse_lev = PARSE_LEV_PES;
     }
 
-    mp_msg(0, MSGL_V, "DEMUX ################ TSParse_GetSection : Start\n");
+    ts_demux_log(0, MSGL_V, "DEMUX ################ TSParse_GetSection : Start\n");
 
     do{
         int  len                = 0;
@@ -652,7 +652,7 @@ BOOL TSParse_GetSection (TSDemuxer* dmx)
     msg = "Get a section OK";
 
 TSPARSE_GETSECTION_RET:
-    mp_msg(0, lev, "DEMUX ################ TSParse_GetSection : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_GetSection : %s\n", msg);
     if (ret != SUCCESS && dmx->m_Section->m_Data != NULL)
     {
         free (dmx->m_Section->m_Data);
@@ -730,7 +730,7 @@ BOOL TSParse_PATSection (TSDemuxer* dmx)
 
 TSPARSE_PATSECTION_RET:
     CloseBitBuffer(&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_PATSection : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_PATSection : %s\n", msg);
     return ret;
 }
 BOOL TSParse_PMTSection (TSDemuxer* dmx, Metadata* meta)
@@ -933,11 +933,11 @@ BOOL TSParse_PMTSection (TSDemuxer* dmx, Metadata* meta)
 
 TSPARSE_PMTSECTION_RET:
     CloseBitBuffer(&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_PMTSection : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_PMTSection : %s\n", msg);
 #if 1
     if (ret == SUCCESS)
     {
-        mp_msg(0, MSGL_INFO, "DEMUX ################ VideoCodec = %s AudioCodec = %s\n",
+        ts_demux_log(0, MSGL_INFO, "DEMUX ################ VideoCodec = %s AudioCodec = %s\n",
             videocodec, audiocodec);
     }
 #endif
@@ -1059,7 +1059,7 @@ BOOL TSParse_PESSection (TSDemuxer* dmx, AVPacket* pack)
 
 TSPARSE_PESSECTION_RET:
     CloseBitBuffer(&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_PESSection : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_PESSection : %s\n", msg);
     if (ret != SUCCESS && pack->data != NULL)
     {
         free (pack->data);
@@ -1135,7 +1135,7 @@ BOOL TSParse_TSPacketHeader (const UI8* data, UI16* pkt_PID, UI16* ofs, BOOL* pe
 
 TSPARSE_TSPACKETHEADER_RET:
     CloseBitBuffer (&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_TSPacketHeader : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_TSPacketHeader : %s\n", msg);
     return ret;
 }
 BOOL TSParse_ParsePESHeader (const UI8* data, UI16  datalen, UI16* len, BOOL* val)
@@ -1187,7 +1187,7 @@ BOOL TSParse_ParsePESHeader (const UI8* data, UI16  datalen, UI16* len, BOOL* va
 
 TSPARSE_PARSEPSIHEADER_RET:
     CloseBitBuffer(&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_ParsePESHeader : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_ParsePESHeader : %s\n", msg);
     return ret;
 }
 BOOL TSParse_ParsePSIHeader (const UI8* data, UI16  datalen, UI16* len)
@@ -1222,6 +1222,6 @@ BOOL TSParse_ParsePSIHeader (const UI8* data, UI16  datalen, UI16* len)
 
 TSPARSE_PARSEPSIHEADER_RET:
     CloseBitBuffer (&buf);
-    mp_msg(0, lev, "DEMUX ################ TSParse_ParsePSIHeader : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_ParsePSIHeader : %s\n", msg);
     return ret;
 }
