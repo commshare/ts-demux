@@ -74,7 +74,7 @@ static DemuxContext* create_demux_context()
 {
     DemuxContext * ctx = calloc(1, sizeof(DemuxContext));
     ctx->demux_open = TSDemux_Open;
-    ctx->demux_probe = TSDemux_Probe;
+    ctx->demux_probe = NULL;
     ctx->demux_close = TSDemux_Close;
     ctx->demux_parse_metadata = TSDemux_Mdata;
     ctx->demux_read_packet = TSDemux_ReadAV;
@@ -353,10 +353,6 @@ TSDEMUX_READAV_RET:
 #endif
     }
     return pack->size;
-}
-int TSDemux_Probe (DemuxContext* ctx)
-{
-    return SUCCESS;
 }
 int TSDemux_Seek  (DemuxContext* ctx)
 {
