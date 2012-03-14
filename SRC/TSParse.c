@@ -1,8 +1,8 @@
 #include <malloc.h>
 #include <string.h>
 #include "TSParse.h"
+#include "demux_log.h"
 #include "../avformat.h"
-#include "../mp_msg.h"
 
 BOOL TSParse_InitParser (TSDemuxer* dmx)
 {
@@ -132,7 +132,7 @@ BOOL TSParse_InitParser (TSDemuxer* dmx)
     msg = "Successfully initialized parser";
 
 TSPARSE_INITPARSER_RET:
-    mp_msg(0, lev, "DEMUX ################ TSParse_InitParser : %s\n", msg);
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_InitParser : %s\n", msg);
     return ret;
 }
 BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8** pack, int* len)
