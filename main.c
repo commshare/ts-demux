@@ -35,8 +35,27 @@ int main(int argc, char** argv)
         return -1;
     }
     /// Test Packet Reading
-    ret = 0;
-    while ((ret = TSDemux_ReadAV (c, pack)) > 0);
+    while ((ret = TSDemux_ReadAV (c, pack)) > 0);    
+    if (ret == FAIL)
+    {
+        fputs("Read failed", stdout);
+    }
+    /// Test Seek
+    ret = TSDemux_Seek(c, 10000);
+    if (ret == FAIL)
+    {
+        fputs("seek failed", stdout);
+    }
+    ret = TSDemux_Seek(c, 30000);
+    if (ret == FAIL)
+    {
+        fputs("seek failed", stdout);
+    }
+    ret = TSDemux_Seek(c, 100000);
+    if (ret == FAIL)
+    {
+        fputs("seek failed", stdout);
+    }
     TSDemux_Close(c);
     fgetc(stdin);
     return 0;
