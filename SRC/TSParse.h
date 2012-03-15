@@ -75,6 +75,7 @@ typedef struct _TSDemuxer
     UI64         m_Duration;        ///< Current demux position
     UI64         m_FileSize;        ///< File size
     UI64         m_Position;        ///< Duration, If it's a live stream set as 0
+    BOOL         m_SupportSeek;     ///< Is support seek
     UI16         m_PMTPID;          ///< PMT PID
     UI16         m_AudioPID;        ///< Audio PID
     UI16         m_VideoPID;        ///< Video PID

@@ -418,7 +418,11 @@ int TSDemux_Seek  (DemuxContext* ctx, long long tms)
         msg = "Metadata hasn't been parsed cannot seek";
         goto TSDEMUX_SEEK_RET;
     }
-    
+    if (dmx->m_SupportSeek == FALSE)
+    {
+        msg = "Doesn't support seeking";
+        goto TSDEMUX_SEEK_RET;
+    }
     if (dmx->m_Duration == 0 || dmx->m_FileSize == 0)
     {
         msg = "File size or duration doesn't indicate cannot seek";
