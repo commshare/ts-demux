@@ -1109,6 +1109,14 @@ BOOL TSParse_PMTSection (TSDemuxer* dmx, Metadata* meta)
         msg = "Cannot find audio or video PID";
         goto TSPARSE_PMTSECTION_RET;
     }
+    if (meta->videocodec != CODEC_ID_H264)
+    {
+        dmx->m_SupportSeek = FALSE;
+    }
+    else
+    {
+        dmx->m_SupportSeek = TRUE;
+    }
     meta->fileformat = FILEFORMAT_ID_TS;
 
     ret = SUCCESS;
