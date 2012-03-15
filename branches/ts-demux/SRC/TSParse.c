@@ -4,6 +4,173 @@
 #include "demux_log.h"
 #include "../avformat.h"
 
+typedef struct BitContext {
+    const UI8* buffer;
+    int  cur;
+    int  size_in_bits;
+} BitContext;
+static UI8 log_tab[256] = {
+    0 , 0 , 1 , 1 , 2 , 2 , 2 , 2 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /*   0 ~  15 */
+    4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , /*  16 ~  31 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /*  32 ~  47 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /*  48 ~  63 */
+    6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , /*  64 ~  79 */
+    6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , /*  80 ~  95 */
+    6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , /*  96 ~ 111 */
+    6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , /* 112 ~ 127 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 128 ~ 143 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 144 ~ 159 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 160 ~ 175 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 176 ~ 191 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 192 ~ 207 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 208 ~ 223 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /* 224 ~ 239 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7   /* 240 ~ 255 */
+};
+static UI8 vlc_len[512] = {
+    14, 13, 12, 12, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, /*   0 ~  15 */
+    9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , 9 , /*  16 ~  31 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /*  32 ~  47 */
+    7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , 7 , /*  48 ~  63 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /*  64 ~  79 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /*  80 ~  95 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /*  96 ~ 111 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /* 112 ~ 127 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 128 ~ 143 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 144 ~ 159 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 160 ~ 175 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 176 ~ 191 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 192 ~ 207 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 208 ~ 223 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 224 ~ 239 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /* 240 ~ 255 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 256 ~ 271 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 272 ~ 287 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 288 ~ 303 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 304 ~ 319 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 320 ~ 335 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 336 ~ 351 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 352 ~ 367 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 368 ~ 383 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 384 ~ 399 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 400 ~ 415 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 416 ~ 431 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 432 ~ 447 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 448 ~ 463 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 464 ~ 479 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 480 ~ 495 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 496 ~ 511 */
+};
+static UI8 vlc_cod[512] = {
+    31, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, /*   0 ~  15 */
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, /*  16 ~  31 */
+    7 , 7 , 7 , 7 , 8 , 8 , 8 , 8 , 9 , 9 , 9 , 9 , 10, 10, 10, 10, /*  32 ~  47 */
+    11, 11, 11, 11, 12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, /*  48 ~  63 */
+    3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , /*  64 ~  79 */
+    4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , 4 , /*  80 ~  95 */
+    5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , 5 , /*  96 ~ 111 */
+    6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , 6 , /* 112 ~ 127 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 128 ~ 143 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 144 ~ 159 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 160 ~ 175 */
+    1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , /* 176 ~ 191 */
+    2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , /* 192 ~ 207 */
+    2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , /* 208 ~ 223 */
+    2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , /* 224 ~ 239 */
+    2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 , /* 240 ~ 255 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 256 ~ 271 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 272 ~ 287 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 288 ~ 303 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 304 ~ 319 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 320 ~ 335 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 336 ~ 351 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 352 ~ 367 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 368 ~ 383 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 384 ~ 399 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 400 ~ 415 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 416 ~ 431 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 432 ~ 447 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 448 ~ 463 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 464 ~ 479 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 480 ~ 495 */
+    0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , /* 496 ~ 511 */
+};
+static int  av_log2  (UI32 v)
+{
+    int n = 0;
+    if (v & 0xffff0000)
+    {
+        v >>= 16;
+        n += 16;
+    }
+    if (v & 0xff00)
+    {
+        v >>= 8;
+        n += 8;
+    }
+    n += log_tab[v];
+    return n;
+}
+static void AV_RL16  (UI16 *buf)
+{
+    UI8* temp = (UI8*)buf;
+    UI16 tm3 = temp[0] << 8;
+    UI16 tm4 = temp[1];
+    *buf = tm3 | tm4;
+}
+static void AV_RL32  (UI32 *buf)
+{
+    UI8* temp = (UI8*)buf;
+    UI32 tm1 = temp[0] << 24;
+    UI32 tm2 = temp[1] << 16 ;
+    UI32 tm3 = temp[2] << 8;
+    UI32 tm4 = temp[3];
+    *buf = tm1 | tm2 |tm3 | tm4;
+}
+static void init_bits(BitContext *s, const UI8 *buffer, UI32 bit_size)
+{
+    UI32 buffer_size= (bit_size + 7) >> 3;
+    if (buffer_size < 0 || bit_size < 0)
+    {
+        buffer_size = bit_size = 0;
+        buffer = NULL;
+    }
+    s->buffer = buffer;
+    s->size_in_bits = bit_size;
+    s->cur = 0;
+}
+static void Skip_ue_golomb (BitContext *s)
+{
+    UI32 buf;
+    int log;
+    int offset = s->cur >> 3;
+    memcpy(&buf, s->buffer + offset, 4);
+    AV_RL32(&buf);
+    buf <<= (s->cur & 0x07);
+    if(buf >= (1 << 27))
+    {
+        buf >>= 32 - 9;
+        s->cur += vlc_len[buf];
+    }
+    else
+    {
+        log= 2 * av_log2(buf) - 31;
+        buf >>= log;
+        s->cur += 32 - log;
+    }
+}
+static int Get_ue_golomb_31(BitContext *s)
+{
+    UI32 buf;
+    int offset = s->cur >> 3;
+    memcpy(&buf, s->buffer + offset, 4);
+    AV_RL32(&buf);
+    buf <<= (s->cur & 0x07);
+    buf >>= (32 - 9);
+    s->cur += vlc_len[buf];
+    return vlc_cod[buf];
+}
+
 BOOL TSParse_InitParser (TSDemuxer* dmx)
 {
     I8 ret = FAIL;
@@ -145,13 +312,10 @@ BOOL TSParse_GetAPacket (TSDemuxer* dmx, UI8** pack, int* len)
     UI8* data = *pack;
     I8   flag = SUCCESS;
 
-    if (*pack == NULL)
+    if ((*pack == NULL) && (NULL == (data = *pack = (UI8*)malloc(TS_PACKET_SIZE_188))))
     {
-        if (NULL == (data = *pack = (UI8*)malloc(TS_PACKET_SIZE_188)));
-        {
-            msg = "Allocate a TS packet failed";
-            goto TSPARSE_GETAPACKET_RET;
-        }
+        msg = "Allocate a TS packet failed";
+        goto TSPARSE_GETAPACKET_RET;
     }
 
     msg = "Calling url_read failed";
@@ -347,6 +511,26 @@ BOOL TSParse_DelPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos)
 
     ts_demux_log(0, lev, "DEMUX ################ TSParse_DelPrePack : %s\n", msg);
     return ret;
+}
+BOOL TSParse_ClrPrePack (TSDemuxer* dmx)
+{
+    TSPacket* prev = dmx->m_PreListHeader;
+    TSPacket* node = dmx->m_PreListHeader->m_Next;
+
+    while (node != NULL)
+    {
+        if (node->m_Data != NULL)
+        {
+            free (node->m_Data);
+            node->m_Data = NULL;
+        }
+        prev->m_Next = node->m_Next;
+        free (node);
+        node = prev->m_Next;
+    }
+
+    dmx->m_PreListLen = 0;
+    return SUCCESS;
 }
 BOOL TSParse_GetSection (TSDemuxer* dmx)
 {
@@ -743,8 +927,8 @@ BOOL TSParse_PMTSection (TSDemuxer* dmx, Metadata* meta)
     UI16 av_pid;                                    ///< PID for each table
     UI16 program_info_len;                          ///< program info length
     UI16 es_info_len;                               ///< ES info length for each table
-    const char* audiocodec;
-    const char* videocodec;
+    const char* audiocodec = NULL;
+    const char* videocodec = NULL;
 
     BitBuffer* buf = NULL;
 
@@ -1223,5 +1407,156 @@ BOOL TSParse_ParsePSIHeader (const UI8* data, UI16  datalen, UI16* len)
 TSPARSE_PARSEPSIHEADER_RET:
     CloseBitBuffer (&buf);
     ts_demux_log(0, lev, "DEMUX ################ TSParse_ParsePSIHeader : %s\n", msg);
+    return ret;
+}
+BOOL TSParse_CheckPESKFrame (const UI8* data, UI32  datalen)
+{
+    I8 ret = FAIL;
+    I8 lev = MSGL_ERR;
+    const I8* msg = NULL;
+
+    UI32 i ;
+    for (i = 0; i + 3 + 9 <= datalen; ++i)
+    {
+        if (data[i] == 0 && data[i + 1] == 0 && data[i + 2] == 1)
+        {
+            UI8  unit_type;
+            UI32 slice_type;
+            i += 3;
+            unit_type = data[i] & 0x1F;
+            if (unit_type == 5 || unit_type == 1)
+            {
+                BitContext buf;
+                init_bits(&buf, data + i + 1, (datalen - i - 1) * 8);
+                Skip_ue_golomb(&buf);
+                slice_type = Get_ue_golomb_31 (&buf);
+
+                if (slice_type > 4)
+                {
+                    slice_type -= 5;
+                }
+                if (slice_type == 2)
+                {
+                    ret = SUCCESS;
+                    lev = MSGL_V;
+                    msg = "Find Key Frame";
+                    goto TSPARSE_CHECKPESKFRAME_RET;
+                }
+                else
+                {
+                    continue;
+                }
+                break;
+            }
+        }
+    }
+
+    lev = MSGL_V;
+    msg = "Not Key Frame";
+
+TSPARSE_CHECKPESKFRAME_RET:
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_CheckPESKFrame : %s\n", msg);
+    return ret;
+}
+BOOL TSParse_GetTSFDuration (TSDemuxer* dmx)
+{
+    I8 ret = FAIL;
+    I8 lev = MSGL_ERR;
+    const I8* msg;
+
+    AVPacket pkt;
+    I64 start_tms;
+    I64 end_tms;
+
+    memset(&pkt, 0, sizeof(pkt));
+
+    while (1)
+    {
+        if (FAIL == TSParse_GetSection (dmx))
+        {
+            msg = "Get a section failed";
+            goto TSPARSE_GETTSFDURATION_RET;
+        }
+        if (dmx->m_Section->m_DataLen == 0)
+        {
+            msg = "Stream End";
+            goto TSPARSE_GETTSFDURATION_RET;
+        }
+        if (FAIL == TSParse_PESSection (dmx, &pkt))
+        {
+            msg = "Parse PES section failed";
+            goto TSPARSE_GETTSFDURATION_RET;
+        }
+        if (pkt.pts == -1)
+        {
+            continue;
+        }
+        start_tms = pkt.pts;
+        break;
+    }
+
+
+    dmx->m_Position = dmx->m_FileSize - (TS_PACKET_SIZE_188 << 10);
+    if (FAIL == dmx->m_Pro->url_seek(dmx->m_Pro, dmx->m_Position, SEEK_SET))
+    {
+        msg = "Calling url_seek Failed";
+        goto TSPARSE_GETTSFDURATION_RET;
+    }
+    TSParse_ClrPrePack(dmx);
+    if (FAIL == TSParse_InitParser(dmx))
+    {
+        msg = "Initialize parsing failed";
+        goto TSPARSE_GETTSFDURATION_RET;
+    }
+    while (1)
+    {
+        if (FAIL == TSParse_GetSection (dmx))
+        {
+            msg = "Get a section failed";
+            goto TSPARSE_GETTSFDURATION_RET;
+        }
+        if (dmx->m_Section->m_DataLen == 0)
+        {
+            msg = "Stream End";
+            goto TSPARSE_GETTSFDURATION_RET;
+        }
+        if (FAIL == TSParse_PESSection(dmx, &pkt))
+        {
+            msg = "Parse PES section failed";
+            goto TSPARSE_GETTSFDURATION_RET;
+        }
+        if (pkt.pts == -1)
+        {
+            continue;
+        }
+        end_tms = pkt.pts;
+        break;
+    }
+
+    if (start_tms == -1 || end_tms == -1)
+    {
+        msg = "Get duration failed";
+        goto TSPARSE_GETTSFDURATION_RET;
+    }
+    
+    dmx->m_Position = 0ULL;
+    if (FAIL == dmx->m_Pro->url_seek(dmx->m_Pro, dmx->m_Position, SEEK_SET))
+    {
+        msg = "Calling url_seek Failed";
+        goto TSPARSE_GETTSFDURATION_RET;
+    }
+    if (FAIL == TSParse_InitParser(dmx))
+    {
+        msg = "Initialize parsing failed";
+        goto TSPARSE_GETTSFDURATION_RET;
+    }
+
+    dmx->m_Duration = (end_tms - start_tms) / 90;
+    ret = SUCCESS;
+    lev = MSGL_V;
+    msg = "Get duration OK";
+
+TSPARSE_GETTSFDURATION_RET:
+    ts_demux_log(0, lev, "DEMUX ################ TSParse_GetTSFDuration : %s\n");
     return ret;
 }

@@ -68,7 +68,8 @@ DemuxContextHelper   ts_demux_helper = {
     create_demux_context,
     destroy_demux_context,
     0,
-    0
+    0,
+    PTHREAD_MUTEX_INITIALIZER
 };
 static DemuxContext* create_demux_context()
 {
@@ -200,6 +201,7 @@ int TSDemux_Open  (DemuxContext* ctx, URLProtocol* h)
     dmx->m_AudioPID   = 0U;
     dmx->m_VideoPID   = 0U;
     dmx->m_Pro        = h;
+    dmx->m_TempAVPkt  = NULL;
     if (FAIL == TSParse_InitParser(dmx))
     {
         free (dmx->m_Section);
@@ -226,27 +228,27 @@ int TSDemux_Close (DemuxContext* ctx)
     {
         if (dmx->m_Section->m_Data != NULL)
         {
+            mp_msg(0, MSGL_INFO, "DEMUX dmx->m_Section->m_Data=%p \n",dmx->m_Section->m_Data);
             free (dmx->m_Section->m_Data);
             dmx->m_Section->m_Data = NULL;
         }
+        mp_msg(0, MSGL_INFO, "DEMUX dmx->m_Section=%p \n",dmx->m_Section);
         free (dmx->m_Section);
         dmx->m_Section = NULL;
     }
     if (dmx->m_PreListHeader->m_Next != NULL)
     {
-        TSPacket* prev = dmx->m_PreListHeader;
-        TSPacket* node = dmx->m_PreListHeader->m_Next;
-        while (node != NULL)
+        TSParse_ClrPrePack(dmx);
+    }
+    if (dmx->m_TempAVPkt != NULL)
+    {
+        if (dmx->m_TempAVPkt->data != NULL)
         {
-            if (node->m_Data != NULL)
-            {
-                free (node->m_Data);
-                node->m_Data = NULL;
-            }
-            prev->m_Next = node->m_Next;
-            free (node);
-            node = prev->m_Next;
+            free (dmx->m_TempAVPkt->data);
+            dmx->m_TempAVPkt->data = NULL;
         }
+        free (dmx->m_TempAVPkt);
+        dmx->m_TempAVPkt = NULL;
     }
 
     ts_demux_log(0, MSGL_INFO, "DEMUX ################ TSDemux_Close : TS demux is closed OK\n");
@@ -265,6 +267,11 @@ int TSDemux_Mdata (DemuxContext* ctx, Metadata* meta)
         msg = "Get section failed";
         goto TSDEMUX_MDATA_RET;
     }
+    if (dmx->m_Section->m_DataLen == 0)
+    {
+        msg = "Stream End";
+        goto TSDEMUX_MDATA_RET;
+    }
     if (FAIL == TSParse_PATSection (dmx))
     {
         msg = "Parse PAT section failed";
@@ -275,12 +282,31 @@ int TSDemux_Mdata (DemuxContext* ctx, Metadata* meta)
         msg = "Get section failed";
         goto TSDEMUX_MDATA_RET;
     }
+    if (dmx->m_Section->m_DataLen == 0)
+    {
+        msg = "Stream End";
+        goto TSDEMUX_MDATA_RET;
+    }
     if (FAIL == TSParse_PMTSection (dmx, meta))
     {
         msg = "Parse PMT section failed";
         goto TSDEMUX_MDATA_RET;
     }
 
+    if (dmx->m_Pro->url_is_live(dmx->m_Pro) == 1)
+    {
+        meta->duation   = 0LL;
+        dmx->m_Duration = 0ULL;
+    }
+    else
+    {
+        if (FAIL == TSParse_GetTSFDuration (dmx))
+        {
+            msg = "Get TS file duration failed";
+            goto TSDEMUX_MDATA_RET;
+        }
+        meta->duation   = (int)dmx->m_Duration;
+    }
     /// @todo Get file duration
 
     ret = SUCCESS;
@@ -290,10 +316,11 @@ int TSDemux_Mdata (DemuxContext* ctx, Metadata* meta)
 TSDEMUX_MDATA_RET:
     ts_demux_log(0, lev, "DEMUX ################ TSDemux_Mdata : %s\n", msg);
 #if 1
-    ts_demux_log(0, lev, "\t Audio :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
+    ts_demux_log(0, lev, "\tAudio :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
         , meta->audiocodec, meta->subaudiocodec, meta->audiostreamindex);
-    ts_demux_log(0, lev, "\t Video :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
+    ts_demux_log(0, lev, "\tVideo :::: Codec ID = 0x%-5X Sub Codec ID = %-2d Stream ID = %d\n"\
         , meta->videocodec, meta->subvideocodec, meta->videostreamindex);
+    ts_demux_log(0, lev, "\tDuration = %d(ms)\n", meta->duation);
 #endif
 #ifdef _WRITE_RAW_DATA_TO_FILE_
     InitiAVFile();
@@ -308,9 +335,26 @@ int TSDemux_ReadAV(DemuxContext* ctx, AVPacket* pack)
 
     TSDemuxer* dmx = (TSDemuxer*)ctx->priv_data;
 
+    if (dmx->m_TempAVPkt != NULL)
+    {
+        free (pack->data);
+        pack->data         = dmx->m_TempAVPkt->data;dmx->m_TempAVPkt->data = NULL;
+        pack->size         = dmx->m_TempAVPkt->size;
+        pack->bufferlength = dmx->m_TempAVPkt->bufferlength;
+        pack->pts          = dmx->m_TempAVPkt->pts;
+        pack->dts          = dmx->m_TempAVPkt->dts;
+        pack->stream_index = dmx->m_TempAVPkt->stream_index;
+        free (dmx->m_TempAVPkt);
+        dmx->m_TempAVPkt = NULL;
+        msg = "Read a A/V packet OK";
+        lev = MSGL_V;
+        ret = pack->size;
+        goto TSDEMUX_READAV_RET;
+    }
+
     while (1)
     {
-        if (FAIL == TSParse_GetSection(dmx))
+        if (FAIL == TSParse_GetSection (dmx))
         {
             msg = "Get a section failed";
             goto TSDEMUX_READAV_RET;
@@ -335,7 +379,7 @@ int TSDemux_ReadAV(DemuxContext* ctx, AVPacket* pack)
         break;
     }
 
-    ret = SUCCESS;
+    ret = pack->size;
     lev = MSGL_V;
     msg = "Read a A/V section OK";
 
@@ -354,10 +398,98 @@ TSDEMUX_READAV_RET:
     }
     return pack->size;
 }
-int TSDemux_Seek  (DemuxContext* ctx)
+int TSDemux_Seek  (DemuxContext* ctx, long long tms)
 {
-    /// @todo
-    return FAIL;
+    I8 ret = FAIL;
+    I8 lev = MSGL_ERR;
+    const I8* msg;
+
+    UI64 pos;
+    
+    TSDemuxer* dmx = (TSDemuxer*)ctx->priv_data;
+
+    if (dmx->m_Pro->url_is_live(dmx->m_Pro) == 1)
+    {
+        msg = "Live Stream Cannot Seek";
+        goto TSDEMUX_SEEK_RET;
+    }
+    if (dmx->m_PMTPID == 0 || dmx->m_AudioPID == 0 || dmx->m_VideoPID == 0)
+    {
+        msg = "Metadata hasn't been parsed cannot seek";
+        goto TSDEMUX_SEEK_RET;
+    }
+    
+    if (dmx->m_Duration == 0 || dmx->m_FileSize == 0)
+    {
+        msg = "File size or duration doesn't indicate cannot seek";
+        goto TSDEMUX_SEEK_RET;
+    }
+    if (dmx->m_Duration - (UI64)tms < 3000)
+    {
+        msg = "Close to file end, cannot seek";
+        goto TSDEMUX_SEEK_RET;
+    }
+    TSParse_ClrPrePack(dmx);
+    pos = dmx->m_FileSize * (UI64)tms / dmx->m_Duration;
+    if (FAIL == dmx->m_Pro->url_seek(dmx->m_Pro, pos, SEEK_SET))
+    {
+        msg = "Calling url_seek failed";
+        goto TSDEMUX_SEEK_RET;
+    }
+    if (FAIL == TSParse_InitParser(dmx))
+    {
+        msg = "Initialize parsing failed";
+        goto TSDEMUX_SEEK_RET;
+    }
+
+    while (1)
+    {
+        if (FAIL == TSParse_GetSection (dmx))
+        {
+            msg = "Get a section failed";
+            goto TSDEMUX_SEEK_RET;
+        }
+        if (dmx->m_Section->m_DataLen == 0)
+        {
+            msg = "Stream End";
+            goto TSDEMUX_SEEK_RET;
+        }
+        if (dmx->m_Section->m_Type != dmx->m_VideoPID)
+        {
+            continue;
+        }
+        if (dmx->m_TempAVPkt == NULL)
+        {
+            dmx->m_TempAVPkt = (AVPacket*)malloc(sizeof(AVPacket));
+            memset(dmx->m_TempAVPkt, 0, sizeof(AVPacket));
+        }
+        if (FAIL == TSParse_PESSection(dmx, dmx->m_TempAVPkt))
+        {
+            msg = "Parse PES section failed";
+            goto TSDEMUX_SEEK_RET;
+        }
+        if (dmx->m_TempAVPkt->pts == -1)
+        {
+            continue;
+        }
+        if (FAIL == TSParse_CheckPESKFrame(dmx->m_TempAVPkt->data, (UI32)dmx->m_TempAVPkt->size))
+        {
+            continue;
+        }
+        msg = "Seek OK";
+        ret = SUCCESS;
+        lev = MSGL_INFO;
+        break;
+    }
+TSDEMUX_SEEK_RET:
+    ts_demux_log(0, lev, "DEMUX ################ TSDemux_Seek : Timestamp = %-5d(s) %s"\
+        , (int)(tms/1000), msg);
+    if (ret == SUCCESS)
+    {
+        ts_demux_log(0, lev, " Current Position = %llu", dmx->m_Position);
+    }
+    ts_demux_log(0, lev, "\n");
+    return ret;
 }
 
 

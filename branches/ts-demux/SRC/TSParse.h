@@ -80,7 +80,8 @@ typedef struct _TSDemuxer
     UI16         m_VideoPID;        ///< Video PID
     TSection*    m_Section;         ///< Current section
     TSPacket*    m_PreListHeader;   ///< Pre-read list
-    UI32         m_PreListLen;      ///< Pre-read list length;
+    AVPacket*    m_TempAVPkt;       ///< Temporary AV Packet, just used for seek
+    UI32         m_PreListLen;      ///< Pre-read list length
     URLProtocol* m_Pro;             ///< Protocol interface for data IO
 }TSDemuxer;
 
@@ -103,6 +104,7 @@ BOOL TSParse_AddPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos);
 /// @param pos Start position of the pre-packet which will be deleted
 /// @note  The packet which is assigned by 'pack' will be freed.
 BOOL TSParse_DelPrePack (TSDemuxer* dmx, UI8** pack, UI64 pos);
+BOOL TSParse_ClrPrePack (TSDemuxer* dmx);
 /// @brief Get a section
 BOOL TSParse_GetSection (TSDemuxer* dmx);
 /// @brief Get and parse PAT section to set PMT PID
@@ -125,4 +127,6 @@ BOOL TSParse_ParsePESHeader (const UI8* data, UI16  datalen, UI16* len, BOOL* va
 /// @brief Parse PSI(PAT/PMT) section header
 /// @param len Indicate section length
 BOOL TSParse_ParsePSIHeader (const UI8* data, UI16  datalen, UI16* len);
+BOOL TSParse_CheckPESKFrame (const UI8* data, UI32  datalen);
+BOOL TSParse_GetTSFDuration (TSDemuxer* dmx);
 #endif/*TS_PARSE_H*/
