@@ -128,6 +128,6 @@ BOOL TSParse_ParsePESHeader (const UI8* data, UI16  datalen, UI16* len, BOOL* va
 /// @brief Parse PSI(PAT/PMT) section header
 /// @param len Indicate section length
 BOOL TSParse_ParsePSIHeader (const UI8* data, UI16  datalen, UI16* len);
-BOOL TSParse_CheckPESKFrame (const UI8* data, UI32  datalen);
+BOOL TSParse_CheckPESKeyFrame_H246 (const UI8* data, UI32  datalen);
 BOOL TSParse_GetTSFDuration (TSDemuxer* dmx);
 #endif/*TS_PARSE_H*/
