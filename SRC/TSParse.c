@@ -1417,7 +1417,7 @@ TSPARSE_PARSEPSIHEADER_RET:
     ts_demux_log(0, lev, "DEMUX ################ TSParse_ParsePSIHeader : %s\n", msg);
     return ret;
 }
-BOOL TSParse_CheckPESKFrame (const UI8* data, UI32  datalen)
+BOOL TSParse_CheckPESKeyFrame_H246 (const UI8* data, UI32  datalen)
 {
     I8 ret = FAIL;
     I8 lev = MSGL_ERR;
@@ -1448,7 +1448,7 @@ BOOL TSParse_CheckPESKFrame (const UI8* data, UI32  datalen)
                     ret = SUCCESS;
                     lev = MSGL_V;
                     msg = "Find Key Frame";
-                    goto TSPARSE_CHECKPESKFRAME_RET;
+                    goto TSPARSE_CHECKPESKEYFRAME_H264_RET;
                 }
                 else
                 {
@@ -1462,7 +1462,7 @@ BOOL TSParse_CheckPESKFrame (const UI8* data, UI32  datalen)
     lev = MSGL_V;
     msg = "Not Key Frame";
 
-TSPARSE_CHECKPESKFRAME_RET:
+TSPARSE_CHECKPESKEYFRAME_H264_RET:
     ts_demux_log(0, lev, "DEMUX ################ TSParse_CheckPESKFrame : %s\n", msg);
     return ret;
 }

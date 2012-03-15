@@ -476,7 +476,8 @@ int TSDemux_Seek  (DemuxContext* ctx, long long tms)
         {
             continue;
         }
-        if (FAIL == TSParse_CheckPESKFrame(dmx->m_TempAVPkt->data, (UI32)dmx->m_TempAVPkt->size))
+        if (FAIL\
+            == TSParse_CheckPESKeyFrame_H246(dmx->m_TempAVPkt->data, (UI32)dmx->m_TempAVPkt->size))
         {
             continue;
         }
