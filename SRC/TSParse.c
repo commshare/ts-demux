@@ -1319,7 +1319,7 @@ BOOL TSParse_TSPacketHeader (const UI8* data, UI16* pkt_PID, UI16* ofs, BOOL* pe
     {
         *ofs = TS_PACKET_SIZE_188;
     }
-    *pes = pes_start == 0x00 ? FALSE : TRUE;
+    *pes = ((pes_start == 0x00) ? FALSE : TRUE);
 
     ret = SUCCESS;
     lev = MSGL_V;
@@ -1478,6 +1478,7 @@ BOOL TSParse_GetTSFDuration (TSDemuxer* dmx)
 
     memset(&pkt, 0, sizeof(pkt));
 
+    /// Get the first PES packet's timestamp
     while (1)
     {
         if (FAIL == TSParse_GetSection (dmx))
@@ -1502,8 +1503,7 @@ BOOL TSParse_GetTSFDuration (TSDemuxer* dmx)
         start_tms = pkt.pts;
         break;
     }
-
-
+    /// Seek to file end(almost)
     dmx->m_Position = dmx->m_FileSize - (TS_PACKET_SIZE_188 << 10);
     if (FAIL == dmx->m_Pro->url_seek(dmx->m_Pro, dmx->m_Position, SEEK_SET))
     {
@@ -1516,6 +1516,7 @@ BOOL TSParse_GetTSFDuration (TSDemuxer* dmx)
         msg = "Initialize parsing failed";
         goto TSPARSE_GETTSFDURATION_RET;
     }
+    /// Get the last PES packet timestamp
     while (1)
     {
         if (FAIL == TSParse_GetSection (dmx))
@@ -1547,12 +1548,14 @@ BOOL TSParse_GetTSFDuration (TSDemuxer* dmx)
         goto TSPARSE_GETTSFDURATION_RET;
     }
     
+    /// Seek to file start position
     dmx->m_Position = 0ULL;
     if (FAIL == dmx->m_Pro->url_seek(dmx->m_Pro, dmx->m_Position, SEEK_SET))
     {
         msg = "Calling url_seek Failed";
         goto TSPARSE_GETTSFDURATION_RET;
     }
+    TSParse_ClrPrePack(dmx);
     if (FAIL == TSParse_InitParser(dmx))
     {
         msg = "Initialize parsing failed";

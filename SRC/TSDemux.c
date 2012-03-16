@@ -385,9 +385,7 @@ int TSDemux_ReadAV(DemuxContext* ctx, AVPacket* pack)
 
 TSDEMUX_READAV_RET:
     ts_demux_log(0, lev, "DEMUX ################ TSDemux_ReadAV : %s\n", msg);
-    if (ret == SUCCESS && dmx->m_Section->m_DataLen != 0ULL)
-    {
-#if _OUTPUT_EACH_AV_PACKET_INFO_
+#ifdef _OUTPUT_EACH_AV_PACKET_INFO_
         ts_demux_log(0, MSGL_INFO, "\t%s PTS = 0x%016llX DTS = 0x%016llX SIZE = %-6d POS = %lld\n"\
             , pack->stream_index == dmx->m_AudioPID ? "Audio" : "Video", pack->pts, pack->dts\
             , pack->size, dmx->m_Section->m_Positon);
@@ -395,7 +393,6 @@ TSDEMUX_READAV_RET:
 #ifdef _WRITE_RAW_DATA_TO_FILE_
         WriteAVFile(dmx, pack->data, pack->size);
 #endif
-    }
     return pack->size;
 }
 int TSDemux_Seek  (DemuxContext* ctx, long long tms)
